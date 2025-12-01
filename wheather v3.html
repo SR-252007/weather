@@ -1,0 +1,534 @@
+<!doctype html>
+<html lang="en">
+ <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Weather Forecasting ODE Models</title>
+  <script src="/_sdk/element_sdk.js"></script>
+  <style>
+        body {
+            box-sizing: border-box;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        html, body {
+            height: 100%;
+            width: 100%;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            overflow-x: hidden;
+        }
+        .weather-background {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            z-index: -1;
+        }
+        .clouds {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+        }
+        .cloud {
+            position: absolute;
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 100px;
+            animation: float 20s infinite ease-in-out;
+        }
+        .cloud:nth-child(1) {
+            width: 120px;
+            height: 40px;
+            top: 20%;
+            left: -10%;
+            animation-delay: 0s;
+        }
+        .cloud:nth-child(2) {
+            width: 160px;
+            height: 50px;
+            top: 50%;
+            left: -15%;
+            animation-delay: 5s;
+        }
+        .cloud:nth-child(3) {
+            width: 100px;
+            height: 35px;
+            top: 70%;
+            left: -8%;
+            animation-delay: 10s;
+        }
+        @keyframes float {
+            0% { transform: translateX(0); }
+            100% { transform: translateX(120vw); }
+        }
+        .app-container {
+            width: 100%;
+            min-height: 100%;
+            padding: 40px 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+            color: white;
+        }
+        .main-title {
+            font-size: 42px;
+            font-weight: bold;
+            margin-bottom: 12px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+        }
+        .subtitle {
+            font-size: 20px;
+            opacity: 0.95;
+        }
+        .content-wrapper {
+            width: 100%;
+            max-width: 1200px;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+        }
+        .model-section {
+            margin-bottom: 35px;
+            padding: 25px;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            border-radius: 12px;
+            border-left: 5px solid #667eea;
+        }
+        .section-title {
+            font-size: 22px;
+            font-weight: bold;
+            color: #2d3748;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+        }
+        .section-icon {
+            margin-right: 10px;
+            font-size: 26px;
+        }
+        .input-group {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        .input-wrapper {
+            display: flex;
+            flex-direction: column;
+        }
+        label {
+            font-size: 14px;
+            font-weight: 600;
+            color: #4a5568;
+            margin-bottom: 6px;
+        }
+        input[type="number"] {
+            padding: 12px;
+            border: 2px solid #cbd5e0;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+        input[type="number"]:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        .predict-button {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            margin-top: 10px;
+        }
+        .predict-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+        .predict-button:active {
+            transform: translateY(0);
+        }
+        .predict-button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+        .results-container {
+            margin-top: 25px;
+            padding: 20px;
+            background: white;
+            border-radius: 8px;
+            border: 2px solid #e2e8f0;
+            display: none;
+        }
+        .results-container.show {
+            display: block;
+            animation: fadeIn 0.5s;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .result-title {
+            font-size: 18px;
+            font-weight: bold;
+            color: #2d3748;
+            margin-bottom: 15px;
+        }
+        .result-item {
+            padding: 12px;
+            background: #f7fafc;
+            border-radius: 6px;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .result-label {
+            font-weight: 600;
+            color: #4a5568;
+        }
+        .result-value {
+            font-size: 18px;
+            font-weight: bold;
+            color: #667eea;
+        }
+        .equation-display {
+            margin-top: 15px;
+            padding: 15px;
+            background: #2d3748;
+            color: #e2e8f0;
+            border-radius: 6px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+        @media (max-width: 768px) {
+            .main-title {
+                font-size: 32px;
+            }
+            .subtitle {
+                font-size: 16px;
+            }
+            .content-wrapper {
+                padding: 25px;
+            }
+            .input-group {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+  <style>@view-transition { navigation: auto; }</style>
+ </head>
+ <body>
+  <div class="weather-background">
+   <div class="clouds">
+    <div class="cloud"></div>
+    <div class="cloud"></div>
+    <div class="cloud"></div>
+   </div>
+  </div>
+  <div class="app-container">
+   <header class="header">
+    <h1 class="main-title" id="mainTitle">Weather Forecasting Models</h1>
+    <p class="subtitle" id="subtitle">Data-Driven ODE Weather Prediction System</p>
+   </header>
+   <main class="content-wrapper"><!-- Rainfall Prediction Section -->
+    <section class="model-section">
+     <h2 class="section-title"><span class="section-icon">🌧️</span> <span id="rainfallLabel">Rainfall Prediction Model</span></h2>
+     <div class="input-group">
+      <div class="input-wrapper"><label for="rainfall-humidity">Humidity (%)</label> <input type="number" id="rainfall-humidity" min="0" max="100" value="65" step="1">
+      </div>
+      <div class="input-wrapper"><label for="rainfall-pressure">Pressure (hPa)</label> <input type="number" id="rainfall-pressure" min="900" max="1100" value="1013" step="1">
+      </div>
+      <div class="input-wrapper"><label for="rainfall-time">Time Steps (hours)</label> <input type="number" id="rainfall-time" min="1" max="72" value="24" step="1">
+      </div>
+     </div><button class="predict-button" onclick="predictRainfall()"> <span id="predictButtonRainfall">Predict Rainfall</span> </button>
+     <div class="results-container" id="rainfall-results">
+      <div class="result-title">
+       Prediction Results
+      </div>
+      <div class="result-item"><span class="result-label">Predicted Rainfall:</span> <span class="result-value" id="rainfall-value">--</span>
+      </div>
+      <div class="result-item"><span class="result-label">Probability:</span> <span class="result-value" id="rainfall-probability">--</span>
+      </div>
+      <div class="equation-display" id="rainfall-equation"></div>
+     </div>
+    </section><!-- Temperature Forecasting Section -->
+    <section class="model-section">
+     <h2 class="section-title"><span class="section-icon">🌡️</span> <span id="temperatureLabel">Temperature Forecasting Model</span></h2>
+     <div class="input-group">
+      <div class="input-wrapper"><label for="temp-current">Current Temp (°C)</label> <input type="number" id="temp-current" min="-50" max="50" value="22" step="0.1">
+      </div>
+      <div class="input-wrapper"><label for="temp-solar">Solar Radiation (W/m²)</label> <input type="number" id="temp-solar" min="0" max="1500" value="800" step="10">
+      </div>
+      <div class="input-wrapper"><label for="temp-time">Time Steps (hours)</label> <input type="number" id="temp-time" min="1" max="72" value="12" step="1">
+      </div>
+     </div><button class="predict-button" onclick="predictTemperature()"> <span id="predictButtonTemp">Predict Temperature</span> </button>
+     <div class="results-container" id="temperature-results">
+      <div class="result-title">
+       Prediction Results
+      </div>
+      <div class="result-item"><span class="result-label">Predicted Temperature:</span> <span class="result-value" id="temp-value">--</span>
+      </div>
+      <div class="result-item"><span class="result-label">Temperature Change:</span> <span class="result-value" id="temp-change">--</span>
+      </div>
+      <div class="equation-display" id="temp-equation"></div>
+     </div>
+    </section><!-- Wind Speed Dynamics Section -->
+    <section class="model-section">
+     <h2 class="section-title"><span class="section-icon">💨</span> <span id="windLabel">Wind Speed Time-Series Dynamics</span></h2>
+     <div class="input-group">
+      <div class="input-wrapper"><label for="wind-current">Current Speed (m/s)</label> <input type="number" id="wind-current" min="0" max="50" value="5" step="0.1">
+      </div>
+      <div class="input-wrapper"><label for="wind-pressure">Pressure Gradient (Pa/km)</label> <input type="number" id="wind-pressure" min="0" max="100" value="20" step="1">
+      </div>
+      <div class="input-wrapper"><label for="wind-time">Time Steps (hours)</label> <input type="number" id="wind-time" min="1" max="72" value="6" step="1">
+      </div>
+     </div><button class="predict-button" onclick="predictWindSpeed()"> <span id="predictButtonWind">Predict Wind Speed</span> </button>
+     <div class="results-container" id="wind-results">
+      <div class="result-title">
+       Prediction Results
+      </div>
+      <div class="result-item"><span class="result-label">Predicted Wind Speed:</span> <span class="result-value" id="wind-value">--</span>
+      </div>
+      <div class="result-item"><span class="result-label">Wind Classification:</span> <span class="result-value" id="wind-class">--</span>
+      </div>
+      <div class="equation-display" id="wind-equation"></div>
+     </div>
+    </section>
+   </main>
+  </div>
+  <script>
+        const defaultConfig = {
+            main_title: "Weather Forecasting Models",
+            subtitle: "Data-Driven ODE Weather Prediction System",
+            rainfall_label: "Rainfall Prediction Model",
+            temperature_label: "Temperature Forecasting Model",
+            wind_label: "Wind Speed Time-Series Dynamics",
+            predict_button_text: "Predict",
+            background_color: "#667eea",
+            surface_color: "#ffffff",
+            text_color: "#2d3748",
+            primary_action_color: "#667eea",
+            secondary_action_color: "#764ba2",
+            font_family: "Segoe UI",
+            font_size: 16
+        };
+        const config = {};
+        async function onConfigChange(cfg) {
+            const mainTitle = document.getElementById('mainTitle');
+            const subtitle = document.getElementById('subtitle');
+            const rainfallLabel = document.getElementById('rainfallLabel');
+            const temperatureLabel = document.getElementById('temperatureLabel');
+            const windLabel = document.getElementById('windLabel');
+            const predictButtonRainfall = document.getElementById('predictButtonRainfall');
+            const predictButtonTemp = document.getElementById('predictButtonTemp');
+            const predictButtonWind = document.getElementById('predictButtonWind');
+            const weatherBg = document.querySelector('.weather-background');
+            const contentWrapper = document.querySelector('.content-wrapper');
+            const allText = document.querySelectorAll('.section-title, label, .result-label');
+            const buttons = document.querySelectorAll('.predict-button');
+            const customFont = cfg.font_family || defaultConfig.font_family;
+            const baseFontStack = 'Tahoma, Geneva, Verdana, sans-serif';
+            const baseSize = cfg.font_size || defaultConfig.font_size;
+            const bgColor = cfg.background_color || defaultConfig.background_color;
+            const surfaceColor = cfg.surface_color || defaultConfig.surface_color;
+            const textColor = cfg.text_color || defaultConfig.text_color;
+            const primaryColor = cfg.primary_action_color || defaultConfig.primary_action_color;
+            const secondaryColor = cfg.secondary_action_color || defaultConfig.secondary_action_color;
+            mainTitle.textContent = cfg.main_title || defaultConfig.main_title;
+            subtitle.textContent = cfg.subtitle || defaultConfig.subtitle;
+            rainfallLabel.textContent = cfg.rainfall_label || defaultConfig.rainfall_label;
+            temperatureLabel.textContent = cfg.temperature_label || defaultConfig.temperature_label;
+            windLabel.textContent = cfg.wind_label || defaultConfig.wind_label;
+            predictButtonRainfall.textContent = cfg.predict_button_text || defaultConfig.predict_button_text;
+            predictButtonTemp.textContent = cfg.predict_button_text || defaultConfig.predict_button_text;
+            predictButtonWind.textContent = cfg.predict_button_text || defaultConfig.predict_button_text;
+mainTitle.style.fontFamily = `${customFont}, ${baseFontStack}`;
+mainTitle.style.fontSize = `${baseSize * 2.625}px`;
+subtitle.style.fontFamily = `${customFont}, ${baseFontStack}`;
+subtitle.style.fontSize = `${baseSize * 1.25}px`;
+            allText.forEach(el => {
+el.style.fontFamily = `${customFont}, ${baseFontStack}`;
+el.style.color = textColor;
+            });
+            document.querySelectorAll('.section-title').forEach(el => {
+el.style.fontSize = `${baseSize * 1.375}px`;
+            });
+            document.querySelectorAll('label').forEach(el => {
+el.style.fontSize = `${baseSize * 0.875}px`;
+            });
+weatherBg.style.background = `linear-gradient(135deg, ${bgColor} 0%, ${secondaryColor} 100%)`;
+contentWrapper.style.background = `rgba(${hexToRgb(surfaceColor)}, 0.95)`;
+            buttons.forEach(btn => {
+btn.style.background = `linear-gradient(135deg, ${primaryColor} 0%, ${secondaryColor} 100%)`;
+btn.style.fontFamily = `${customFont}, ${baseFontStack}`;
+btn.style.fontSize = `${baseSize * 1.125}px`;
+            });
+        }
+        function hexToRgb(hex) {
+            const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+            return result ? `${parseInt(result[1], 16)}, ${parseInt(result[2], 16)}, ${parseInt(result[3], 16)}` : '255, 255, 255';
+        }
+        function predictRainfall() {
+            const humidity = parseFloat(document.getElementById('rainfall-humidity').value);
+            const pressure = parseFloat(document.getElementById('rainfall-pressure').value);
+            const time = parseFloat(document.getElementById('rainfall-time').value);
+            const theta1 = 0.015;
+            const theta2 = 0.008;
+            const theta3 = 0.002;
+            const rainfall = theta1 * humidity + theta2 * (1013 - pressure) + theta3 * time * Math.sin(time / 12);
+            const clampedRainfall = Math.max(0, rainfall);
+            const probability = Math.min(100, (humidity / 100) * (1 + (1013 - pressure) / 100) * 100);
+            document.getElementById('rainfall-value').textContent = `${clampedRainfall.toFixed(2)} mm`;
+            document.getElementById('rainfall-probability').textContent = `${probability.toFixed(1)}%`;
+            document.getElementById('rainfall-equation').innerHTML = `
+                <strong>Neural ODE Model:</strong><br>
+                dR/dt = θ₁·H + θ₂·(P₀ - P) + θ₃·t·sin(t/12)<br>
+                where R = rainfall, H = ${humidity}%, P = ${pressure} hPa<br>
+                θ = [${theta1}, ${theta2}, ${theta3}] (learned parameters)
+            `;
+            document.getElementById('rainfall-results').classList.add('show');
+        }
+        function predictTemperature() {
+            const currentTemp = parseFloat(document.getElementById('temp-current').value);
+            const solarRad = parseFloat(document.getElementById('temp-solar').value);
+            const time = parseFloat(document.getElementById('temp-time').value);
+            const alpha = 0.003;
+            const beta = 0.02;
+            const gamma = 0.1;
+            const tempChange = alpha * solarRad * (1 - Math.exp(-beta * time)) - gamma * currentTemp * time / 24;
+            const predictedTemp = currentTemp + tempChange;
+            document.getElementById('temp-value').textContent = `${predictedTemp.toFixed(1)}°C`;
+            document.getElementById('temp-change').textContent = `${tempChange >= 0 ? '+' : ''}${tempChange.toFixed(1)}°C`;
+            document.getElementById('temp-equation').innerHTML = `
+                <strong>Temperature ODE Model:</strong><br>
+                dT/dt = α·S·(1 - e^(-βt)) - γ·T·(t/24)<br>
+                where T = temperature, S = ${solarRad} W/m²<br>
+                α = ${alpha}, β = ${beta}, γ = ${gamma} (model parameters)
+            `;
+            document.getElementById('temperature-results').classList.add('show');
+        }
+        function predictWindSpeed() {
+            const currentSpeed = parseFloat(document.getElementById('wind-current').value);
+            const pressureGrad = parseFloat(document.getElementById('wind-pressure').value);
+            const time = parseFloat(document.getElementById('wind-time').value);
+            const lambda = 0.15;
+            const mu = 0.08;
+            const nu = 0.02;
+            const windSpeed = currentSpeed + lambda * pressureGrad * (1 - Math.exp(-mu * time)) - nu * currentSpeed * time;
+            const clampedWind = Math.max(0, windSpeed);
+            let windClass = '';
+            if (clampedWind < 5) windClass = 'Light';
+            else if (clampedWind < 15) windClass = 'Moderate';
+            else if (clampedWind < 25) windClass = 'Strong';
+            else windClass = 'Very Strong';
+            document.getElementById('wind-value').textContent = `${clampedWind.toFixed(2)} m/s`;
+            document.getElementById('wind-class').textContent = windClass;
+            document.getElementById('wind-equation').innerHTML = `
+                <strong>Wind Dynamics ODE Model:</strong><br>
+                dW/dt = λ·∇P·(1 - e^(-μt)) - ν·W·t<br>
+                where W = wind speed, ∇P = ${pressureGrad} Pa/km<br>
+                λ = ${lambda}, μ = ${mu}, ν = ${nu} (dynamics parameters)
+            `;
+            document.getElementById('wind-results').classList.add('show');
+        }
+        if (window.elementSdk) {
+            window.elementSdk.init({
+                defaultConfig: defaultConfig,
+                onConfigChange: onConfigChange,
+                mapToCapabilities: (cfg) => ({
+                    recolorables: [
+                        {
+                            get: () => cfg.background_color || defaultConfig.background_color,
+                            set: (value) => {
+                                cfg.background_color = value;
+                                window.elementSdk.setConfig({ background_color: value });
+                            }
+                        },
+                        {
+                            get: () => cfg.surface_color || defaultConfig.surface_color,
+                            set: (value) => {
+                                cfg.surface_color = value;
+                                window.elementSdk.setConfig({ surface_color: value });
+                            }
+                        },
+                        {
+                            get: () => cfg.text_color || defaultConfig.text_color,
+                            set: (value) => {
+                                cfg.text_color = value;
+                                window.elementSdk.setConfig({ text_color: value });
+                            }
+                        },
+                        {
+                            get: () => cfg.primary_action_color || defaultConfig.primary_action_color,
+                            set: (value) => {
+                                cfg.primary_action_color = value;
+                                window.elementSdk.setConfig({ primary_action_color: value });
+                            }
+                        },
+                        {
+                            get: () => cfg.secondary_action_color || defaultConfig.secondary_action_color,
+                            set: (value) => {
+                                cfg.secondary_action_color = value;
+                                window.elementSdk.setConfig({ secondary_action_color: value });
+                            }
+                        }
+                    ],
+                    borderables: [],
+                    fontEditable: {
+                        get: () => cfg.font_family || defaultConfig.font_family,
+                        set: (value) => {
+                            cfg.font_family = value;
+                            window.elementSdk.setConfig({ font_family: value });
+                        }
+                    },
+                    fontSizeable: {
+                        get: () => cfg.font_size || defaultConfig.font_size,
+                        set: (value) => {
+                            cfg.font_size = value;
+                            window.elementSdk.setConfig({ font_size: value });
+                        }
+                    }
+                }),
+                mapToEditPanelValues: (cfg) => new Map([
+                    ["main_title", cfg.main_title || defaultConfig.main_title],
+                    ["subtitle", cfg.subtitle || defaultConfig.subtitle],
+                    ["rainfall_label", cfg.rainfall_label || defaultConfig.rainfall_label],
+                    ["temperature_label", cfg.temperature_label || defaultConfig.temperature_label],
+                    ["wind_label", cfg.wind_label || defaultConfig.wind_label],
+                    ["predict_button_text", cfg.predict_button_text || defaultConfig.predict_button_text]
+                ])
+            });
+        }
+    </script>
+<footer>
+	<hr>
+	<p>copyrights 2025 Wheather pridiction website||All Rights reservered by CCC team 8</p>
+</footer>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9a4ed53ff7937eb0',t:'MTc2NDIxNzIyNi4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);
+if('loading'!==document.readyState)c();
+else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);
+else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();
+</script>
+</body>
+</html>
