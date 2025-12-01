@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Weather model — Lorenz attractor (ODE)</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header>
+    <h1>Weather model — Lorenz attractor (ODE)</h1>
+    <p>Interactive ODE-based weather model. Use the controls to experiment with parameters and integration.</p>
+  </header>
+
+  <main>
+    <section class="canvas-wrap">
+      <canvas id="viz" width="900" height="600" aria-label="Lorenz attractor visualization"></canvas>
+      <div class="hud">
+        <div>Step: <span id="stepCount">0</span></div>
+        <div>t: <span id="time">0.000</span></div>
+        <div>Points: <span id="pts">0</span></div>
+      </div>
+    </section>
+
+    <section class="controls">
+      <div class="row">
+        <label>σ (sigma): <input type="number" id="sigma" step="0.1" value="10" /></label>
+        <label>ρ (rho): <input type="number" id="rho" step="0.1" value="28" /></label>
+        <label>β (beta): <input type="number" id="beta" step="0.01" value="2.6666667" /></label>
+      </div>
+
+      <div class="row">
+        <label>dt: <input type="number" id="dt" step="0.0005" value="0.005" /></label>
+        <label>Speed multiplier: <input type="range" id="speed" min="1" max="10" value="1" /></label>
+        <label>Trail length: <input type="number" id="trail" step="1" min="100" max="100000" value="8000" /></label>
+      </div>
+
+      <div class="row">
+        <button id="startBtn">Start</button>
+        <button id="pauseBtn" disabled>Pause</button>
+        <button id="stepBtn">Step</button>
+        <button id="resetBtn">Reset</button>
+        <button id="randomBtn">Randomize IC</button>
+        <button id="clearBtn">Clear</button>
+        <button id="exportBtn">Export CSV</button>
+      </div>
+
+      <div class="row checkbox-row">
+        <label><input type="checkbox" id="showAxes" checked /> Show axes</label>
+        <label><input type="checkbox" id="colorByZ" checked /> Color by z (height)</label>
+      </div>
+    </section>
+
+    <section class="about">
+      <h2>About</h2>
+      <p>This demo uses a 4th-order Runge–Kutta integrator (RK4) to simulate the Lorenz system:</p>
+      <pre>
+dx/dt = σ (y - x)
+dy/dt = x (ρ - z) - y
+dz/dt = x y - β z
+      </pre>
+      <p>It demonstrates how small parameter or initial-condition changes can lead to very different trajectories — a useful toy model for chaotic weather-like dynamics.</p>
+    </section>
+  </main>
+
+  <footer>
+    <small>Made with JavaScript — SR-252007/weather example</small>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>
